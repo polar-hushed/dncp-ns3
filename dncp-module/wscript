@@ -1,0 +1,37 @@
+# -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
+# def options(opt):
+#     pass
+
+# def configure(conf):
+#     conf.check_nonfatal(header_name='stdint.h', define_name='HAVE_STDINT_H')
+
+def build(bld):
+    module = bld.create_ns3_module('dncp', ['core','internet','applications'])
+    module.source = [
+        'model/dncp-application.cc',
+        'helper/dncp-application-helper.cc',
+        ]
+
+   # module_test = bld.create_ns3_module_test_library('dncp')
+   # module_test.source = [
+    #    'test/dncp-test-suite.cc',
+     #   ]
+
+    headers = bld(features='ns3header')
+    headers.module = 'dncp'
+    headers.source = [
+        'model/dncp-application.h',
+        #'model/dncp_io.h',
+        'helper/dncp-application-helper.h',
+        ]
+    module.use.append("LIBDNCP")
+    module.use.append("LIBUBOX")
+    
+    bld.recurse('scripts')
+
+    if bld.env.ENABLE_EXAMPLES:
+        bld.recurse('examples')
+
+    # bld.ns3_python_bindings()
+

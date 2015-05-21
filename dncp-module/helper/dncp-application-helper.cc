@@ -33,7 +33,6 @@ DncpApplicationHelper::Install (NodeContainer c) const
     {
       apps.Add (InstallPriv (*i));
     }
-
   return apps;
 }
 
@@ -42,7 +41,6 @@ DncpApplicationHelper::InstallPriv (Ptr<Node> node) const
 {
   Ptr<Application> app = m_factory.Create<DncpApplication> ();
   node->AddApplication (app);
-
   return app;
 }
 

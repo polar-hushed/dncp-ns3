@@ -47,11 +47,13 @@ public:
 	ssize_t Dncp_Recvfrom( void *buf, size_t len,  char *ifname,
           	  	  	  	  struct sockaddr_in6 *src, struct in6_addr *dst);
 
+
 private:
 	virtual void StartApplication (void);
 	virtual void StopApplication (void);
 	void DncpDoRun(dncp _o);
 	void HandleRead (Ptr<Socket> socket);
+
 
 	ns3::Ptr<ns3::Socket>     	m_socket;
 	uint32_t        			m_packetSize;
@@ -59,7 +61,8 @@ private:
 	ns3::EventId         	    m_timeoutEvent;
 	bool            			m_running;
 	uint32_t        			m_packetsSent;
-	dncp   				 	o;
+	dncp   				 	    o;
+
 };
 
 /* ... */

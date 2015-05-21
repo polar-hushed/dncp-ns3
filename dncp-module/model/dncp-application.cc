@@ -27,6 +27,7 @@ DncpApplication::DncpApplication ()
     m_running (false),
     m_packetsSent (0)
 {
+	NS_LOG_FUNCTION (this);
 }
 
 DncpApplication::~DncpApplication()
@@ -64,6 +65,7 @@ DncpApplication::StartApplication (void)
 		dncp_if_set_enabled(o, nom, 1);
 	}
 
+
 	if (inet_pton(AF_INET6, HNCP_MCAST_GROUP,
 	                &o->profile_data.multicast_address) < 1)
 	    {
@@ -92,6 +94,9 @@ DncpApplication::StopApplication (void)
 		m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
 	}
 	//dncp_destroy(o);
+	NS_LOG_INFO ("At time " <<Simulator::Now ().GetSeconds () << "s Node "<<GetNode()->GetId()<<" stopped, " <<m_packetsSent
+			<<" packets sent in total");
+
 }
 
 
@@ -245,6 +250,7 @@ DncpApplication::Dncp_Recvfrom(void *buf, size_t len, char *ifname,
 
 	return 0;
 }
+
 }/*End ns3 namespace*/
 
 

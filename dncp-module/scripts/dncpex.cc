@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
+#include "ns3/applications-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/dncp-module.h"
@@ -15,9 +16,11 @@
 NS_LOG_COMPONENT_DEFINE ("DncpExample");
 
 // Default Network Topology
-//
-//
-// n0 -------------- n1   n2   n3   n4
+
+//			point-to-point
+// ===================================
+// |                                 |
+// n0 =============== n1   n2   n3   n4
 //    point-to-point  |    |    |    |
 //                    ================
 //                      LAN
@@ -27,8 +30,6 @@ int
 main (int argc, char *argv[]){
 	Time::SetResolution (Time::MS);
 	LogComponentEnable ("DncpApplication", LOG_LEVEL_INFO);
-	Packet::EnableChecking();
-	Packet::EnablePrinting();
 
 	uint32_t nCsma=3;
 	NodeContainer p2pNodes;
@@ -73,16 +74,18 @@ main (int argc, char *argv[]){
 	ipv6addr.SetBase (Ipv6Address ("2001:3::"), Ipv6Prefix (64));
 	Ipv6InterfaceContainer Interfaces2 =ipv6addr.Assign(p2pDevices1);
 
+
 	DncpApplicationHelper dncp;
 	ApplicationContainer dncpApps = dncp.Install (p2pNodes.Get(0));
+
 	dncpApps.Start (Seconds (2.0));
-	dncpApps.Stop (Seconds (30.0));
+	dncpApps.Stop (Seconds (100));
 
 	dncpApps=dncp.Install(csmaNodes);
 	dncpApps.Start (Seconds (2.0));
-	dncpApps.Stop (Seconds (200.0));
+	dncpApps.Stop (Seconds (100));
 
-	Simulator::Stop (Seconds (200));
+	Simulator::Stop (Seconds (250));
 	Simulator::Run ();
 	Simulator::Destroy ();
 	return 0;

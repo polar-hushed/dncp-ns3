@@ -24,6 +24,7 @@ extern "C" {
 #include "ns3/abort.h"
 #include "ns3/ipv6.h"
 #include "ns3/application.h"
+#include "ns3/dncp-application.h"
 #include "ns3/simulator.h"
 #include "ns3/ipv6-packet-info-tag.h"
 #include <iostream>

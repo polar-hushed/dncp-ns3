@@ -11,6 +11,7 @@ def build(bld):
     module.source = [
         'model/dncp-application.cc',
         'helper/dncp-application-helper.cc',
+        'model/dncp_io.cc',
         ]
 
    # module_test = bld.create_ns3_module_test_library('dncp')
@@ -22,7 +23,6 @@ def build(bld):
     headers.module = 'dncp'
     headers.source = [
         'model/dncp-application.h',
-        #'model/dncp_io.h',
         'helper/dncp-application-helper.h',
         ]
     module.use.append("LIBDNCP")

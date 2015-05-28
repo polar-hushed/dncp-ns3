@@ -47,6 +47,7 @@ DncpApplication::DncpDoRun(dncp _o){
 	NS_LOG_FUNCTION (this);
 	if (m_running)
 		dncp_run(_o);
+
 }
 
 void
@@ -159,7 +160,6 @@ DncpApplication::Dncp_Sendto(dncp o,void *buf, size_t len, const struct sockaddr
 			Ptr<Ipv6> ipv6 = GetNode()->GetObject<Ipv6> ();
 			uint8_t *buf1;
 			buf1=static_cast<uint8_t *>(buf);
-			std::cout<<*buf1<<std::endl;
 			Ptr<Packet> packet = Create<Packet> (buf1,len);
 
 			m_socket->SendTo (packet,0,Inet6SocketAddress(Ipv6Address::ConvertFrom(dstAddr), dstPort),

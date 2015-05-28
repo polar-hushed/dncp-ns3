@@ -168,7 +168,7 @@ void _hnetd_log(int priority, const char *format, ...)
 	va_end(argptr);
 }
 
-int log_level=9;
+int log_level=0;
 void (*hnetd_log)(int priority, const char *format, ...) = _hnetd_log;
 
 

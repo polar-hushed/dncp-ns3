@@ -8,12 +8,21 @@ namespace ns3 {
 
 NS_OBJECT_ENSURE_REGISTERED (DncpApplication);
 
+static void
+NethashTrack(std::string context,const uint64_t oldvalue,const uint64_t newvalue)
+{
+  NS_LOG_UNCOND (Simulator::Now ().GetSeconds ()<<" "<<context<<" "<<newvalue);
+}
+
 TypeId
 DncpApplication::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::DncpApplication")
     .SetParent<Application> ()
     .AddConstructor<DncpApplication>()
+	.AddTraceSource ("NetworkHash",
+	                 "the network hash value calculated by this node",
+	                 MakeTraceSourceAccessor (&DncpApplication::net_hash))
   ;
   return tid;
 }
@@ -45,8 +54,11 @@ DncpApplication::DncpRun(dncp _o, int msecs)
 void
 DncpApplication::DncpDoRun(dncp _o){
 	NS_LOG_FUNCTION (this);
-	if (m_running)
+	if (m_running){
 		dncp_run(_o);
+		net_hash=dncp_hash64(&o->network_hash);
+	}
+
 
 }
 
@@ -71,6 +83,10 @@ DncpApplication::StartApplication (void)
 	    {
 	      NS_LOG_ERROR("unable to inet_pton multicast group address");
 	    }
+
+	std::ostringstream oss;
+	oss<<"/Nodelist/"<<GetNode()->GetId()<<"/$ns3::DncpApplication/NetworkHash";
+	this->TraceConnect( "NetworkHash",oss.str(), MakeCallback (&NethashTrack));
 
 	m_running = true;
 	m_packetsSent = 0;

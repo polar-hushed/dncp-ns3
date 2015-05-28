@@ -29,9 +29,9 @@ using namespace ns3;
 int
 main (int argc, char *argv[]){
 	Time::SetResolution (Time::MS);
-	LogComponentEnable ("DncpApplication", LOG_LEVEL_INFO);
+	//LogComponentEnable ("DncpApplication", LOG_LEVEL_INFO);
 
-	uint32_t nCsma=3;
+	uint32_t nCsma=50;
 	NodeContainer p2pNodes;
 	p2pNodes.Create (2);
 

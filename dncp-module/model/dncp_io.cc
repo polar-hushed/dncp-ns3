@@ -32,14 +32,6 @@ extern "C" {
 #define HNCP_MAXIMUM_MULTICAST_SIZE (1280-40-8)
 
 
-uint32_t node_id(dncp o){
-	void *t=o->userdata;
-	ns3::DncpApplication *app;
-	app=static_cast<ns3::DncpApplication*>(t);
-	return app->GetNode()->GetId();
-}
-
-
 struct tlv_attr *dncp_profile_node_validate_data(dncp_node n,
                                           struct tlv_attr *a)
 {

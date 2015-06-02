@@ -1,6 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 #include "ns3/log.h"
 #include "dncp-application.h"
+#include "node-id-tag.h"
 
 NS_LOG_COMPONENT_DEFINE ("DncpApplication");
 
@@ -158,8 +159,8 @@ DncpApplication::Dncp_uninit(){
 }
 
 void
-DncpApplication::Dncp_Sendto(dncp o,void *buf, size_t len, const struct sockaddr_in6 *dst){
-
+DncpApplication::Dncp_Sendto(dncp o,void *buf, size_t len, const struct sockaddr_in6 *dst)
+{
 	NS_LOG_FUNCTION (this<<o);
 	if(m_running)
 	{
@@ -177,6 +178,10 @@ DncpApplication::Dncp_Sendto(dncp o,void *buf, size_t len, const struct sockaddr
 			uint8_t *buf1;
 			buf1=static_cast<uint8_t *>(buf);
 			Ptr<Packet> packet = Create<Packet> (buf1,len);
+
+			NodeIdTag nodeId;
+			nodeId.SetNodeId (GetNode()->GetId());
+			packet->AddByteTag (nodeId);
 
 			m_socket->SendTo (packet,0,Inet6SocketAddress(Ipv6Address::ConvertFrom(dstAddr), dstPort),
 				ipv6->GetNetDevice (interfaceIndex));
@@ -214,7 +219,18 @@ DncpApplication::Dncp_Recvfrom(void *buf, size_t len, char *ifname,
 			{
 			   NS_ABORT_MSG ("No incoming interface on RIPng message, aborting.");
 			}
+
+			NodeIdTag nodeidtag;
+			uint32_t sourceNodeId;
+			if (packet->FindFirstMatchingByteTag (nodeidtag)) {
+				sourceNodeId= nodeidtag.GetNodeId ();
+			}
+			else{
+				NS_ABORT_MSG ("No nodeid tagged to the packet, aborting.");
+			}
+
 			struct sockaddr_in6 peer;
+			Ipv6Address sourceAddr;
 
 			/*Get destination information,first incoming interface index*/
 			uint32_t incomingIf = interfaceInfo.GetRecvIf ();
@@ -223,10 +239,11 @@ DncpApplication::Dncp_Recvfrom(void *buf, size_t len, char *ifname,
 			uint32_t ipInterfaceIndex = ipv6->GetInterfaceForDevice (dev);
 
 			/*Then source address, port*/
+			sourceAddr=Inet6SocketAddress::ConvertFrom (from).GetIpv6 ();
 			uint16_t port=Inet6SocketAddress::ConvertFrom (from).GetPort ();
 			char addrBuffer[INET6_ADDRSTRLEN];
 			std::stringstream stream;
-			stream<<Inet6SocketAddress::ConvertFrom (from).GetIpv6 ();
+			stream<<sourceAddr;
 			stream>>addrBuffer;
 
 			/*put source information in sockaddr_in6 struct*/
@@ -250,7 +267,7 @@ DncpApplication::Dncp_Recvfrom(void *buf, size_t len, char *ifname,
 			std::sprintf(ifname,"%d",ipInterfaceIndex);
 
 			NS_LOG_INFO("At time " << Simulator::Now ().GetSeconds () << "s Node "<<GetNode()->GetId()<<
-					" received " << packet->GetSize () << " bytes from "<<addrBuffer << " port " <<port<<
+					" received " << packet->GetSize () << " bytes from node "<<sourceNodeId<<": "<<addrBuffer << " port " <<port<<
 					" from ipInterface "<<ipInterfaceIndex<<" from device interface "<<incomingIf);
 
 			return packet->GetSize ();
@@ -265,7 +282,6 @@ DncpApplication::Dncp_Recvfrom(void *buf, size_t len, char *ifname,
 
 	return 0;
 }
-
 }/*End ns3 namespace*/
 
 

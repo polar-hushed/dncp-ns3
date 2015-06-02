@@ -56,7 +56,6 @@ private:
 	void DncpDoRun(dncp _o);
 	void HandleRead (Ptr<Socket> socket);
 
-
 	ns3::Ptr<ns3::Socket>     	m_socket;
 	uint32_t        			m_packetSize;
 	uint32_t        			m_nPackets;

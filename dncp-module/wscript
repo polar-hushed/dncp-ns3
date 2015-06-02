@@ -12,6 +12,7 @@ def build(bld):
         'model/dncp-application.cc',
         'helper/dncp-application-helper.cc',
         'model/dncp_io.cc',
+        'model/node-id-tag.cc',
         ]
 
    # module_test = bld.create_ns3_module_test_library('dncp')
@@ -24,6 +25,7 @@ def build(bld):
     headers.source = [
         'model/dncp-application.h',
         'helper/dncp-application-helper.h',
+        'model/node-id-tag.h',
         ]
     module.use.append("LIBDNCP")
     module.use.append("LIBUBOX")

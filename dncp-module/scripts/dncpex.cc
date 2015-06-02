@@ -28,10 +28,22 @@ NS_LOG_COMPONENT_DEFINE ("DncpExample");
 using namespace ns3;
 int
 main (int argc, char *argv[]){
-	Time::SetResolution (Time::MS);
-	//LogComponentEnable ("DncpApplication", LOG_LEVEL_INFO);
 
-	uint32_t nCsma=50;
+	Time::SetResolution (Time::MS);
+
+	uint32_t nCsma=3;
+	log_level=0;
+	bool verbose=false;
+
+	CommandLine cmd;
+	cmd.AddValue ("nCsma", "number of csma nodes",nCsma);
+	cmd.AddValue ("log_level","log level in dncp code",log_level);
+	cmd.AddValue ("verbose","set it to true to enable DncpApplication logging component",verbose);
+	cmd.Parse (argc, argv);
+
+	if(verbose)
+		LogComponentEnable ("DncpApplication", LOG_LEVEL_INFO);
+
 	NodeContainer p2pNodes;
 	p2pNodes.Create (2);
 

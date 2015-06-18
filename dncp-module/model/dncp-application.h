@@ -48,22 +48,36 @@ public:
 	void Dncp_Sendto(dncp o, void *buf, size_t len, const struct sockaddr_in6 *dst);
 	ssize_t Dncp_Recvfrom( void *buf, size_t len,  char *ifname,
           	  	  	  	  struct sockaddr_in6 *src, struct in6_addr *dst);
-
+	void PutTLV();
 
 private:
 	virtual void StartApplication (void);
 	virtual void StopApplication (void);
 	void DncpDoRun(dncp _o);
 	void HandleRead (Ptr<Socket> socket);
+	void MsgReceivedCallback (dncp_subscriber s,
+            const char *ifname,
+            struct sockaddr_in6 *src,
+            struct in6_addr *dst,
+            struct tlv_attr *msg);
 
 	ns3::Ptr<ns3::Socket>     	m_socket;
-	uint32_t        			m_packetSize;
 	uint32_t        			m_nPackets;
 	ns3::EventId         	    m_timeoutEvent;
 	bool            			m_running;
 	uint32_t        			m_packetsSent;
 	dncp   				 	    o;
 	TracedValue<uint64_t> 		net_hash;
+	TracedCallback<Ipv6Address,Ipv6Address,uint32_t,uint32_t,uint64_t,struct tlv_attr*,bool >    m_packetRxTrace;
+	TracedCallback<Ipv6Address,Ipv6Address,uint32_t,uint32_t,uint64_t,struct tlv_attr*,bool >    m_packetTxTrace;
+	TracedCallback<Ptr<Packet>,uint32_t,bool>																	   m_packetRxTrace1;
+
+
+	typedef void(* DncpCallback)(Ipv6Address saddr, Ipv6Address dstaddr,
+			uint32_t deviceIndex,uint32_t pktsize,uint64_t uid,struct tlv_attr* msg,bool receive);
+
+	typedef void(* DncpCallback1)(Ptr<Packet>,uint32_t deviceIndex,bool receive);
+
 };
 
 /* ... */

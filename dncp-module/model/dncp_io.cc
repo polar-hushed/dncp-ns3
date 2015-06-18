@@ -31,6 +31,7 @@ extern "C" {
 
 #define HNCP_MAXIMUM_MULTICAST_SIZE (1280-40-8)
 
+using namespace ns3;
 
 struct tlv_attr *dncp_profile_node_validate_data(dncp_node n,
                                           struct tlv_attr *a)
@@ -72,11 +73,12 @@ bool dncp_io_init(dncp o){
 	void *t=o->userdata;
 	ns3::DncpApplication *app;
 	app=static_cast<ns3::DncpApplication*>(t);
+	Ptr<DncpApplication> app_p = Ptr<DncpApplication>(app);
 
 	if (!o->udp_port)
 		o->udp_port = HNCP_PORT;
 
-	if(app->Socket_init(o->udp_port)) {
+	if(app_p->Socket_init(o->udp_port)) {
 		return true;
 	}
 	return false;
@@ -86,7 +88,9 @@ void dncp_io_uninit(dncp o){
 	void *t=o->userdata;
 	ns3::DncpApplication *app;
 	app=static_cast<ns3::DncpApplication*>(t);
-	app->Dncp_uninit();
+	Ptr<DncpApplication> app_p=Ptr<DncpApplication>(app);
+
+	app_p->Dncp_uninit();
 }
 
 bool dncp_io_set_ifname_enabled(dncp o, const char *ifname, bool enabled){
@@ -111,11 +115,12 @@ int dncp_io_get_hwaddrs(unsigned char *buf, int buf_left){
 }
 
 void dncp_io_schedule(dncp o, int msecs){
+
 	void *t=o->userdata;
 	ns3::DncpApplication *app;
 	app=static_cast<ns3::DncpApplication*>(t);
-
-	app->DncpRun(o,msecs);
+	Ptr<DncpApplication> app_p = Ptr<DncpApplication>(app);
+	app_p->DncpRun(o,msecs);
 
 }
 
@@ -132,7 +137,8 @@ ssize_t dncp_io_recvfrom(dncp o, void *buf, size_t len,
 	void *t=o->userdata;
 	ns3::DncpApplication *app;
 	app=static_cast<ns3::DncpApplication*>(t);
-	return app->Dncp_Recvfrom(buf,len,ifname,src,dst);
+	Ptr<DncpApplication> app_p = Ptr<DncpApplication>(app);
+	return app_p->Dncp_Recvfrom(buf,len,ifname,src,dst);
 
 }
 
@@ -143,10 +149,10 @@ ssize_t dncp_io_sendto(dncp o, void *buf, size_t len,
 	void *t=o->userdata;
 	ns3::DncpApplication *app;
 	app=static_cast<ns3::DncpApplication*>(t);
-
+	Ptr<DncpApplication> app_p = Ptr<DncpApplication>(app);
 	char addrBuffer1[48];
 	memcpy(addrBuffer1,buf,48);
-	app->Dncp_Sendto(o,buf,len,dst);
+	app_p->Dncp_Sendto(o,buf,len,dst);
 	return 0;
 }
 

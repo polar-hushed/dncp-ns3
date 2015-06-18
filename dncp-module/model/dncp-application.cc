@@ -1,19 +1,17 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+extern "C" {
+#include "string.h"
+}
 #include "ns3/log.h"
 #include "dncp-application.h"
 #include "node-id-tag.h"
 
-NS_LOG_COMPONENT_DEFINE ("DncpApplication");
-
 namespace ns3 {
+
+NS_LOG_COMPONENT_DEFINE ("DncpApplication");
 
 NS_OBJECT_ENSURE_REGISTERED (DncpApplication);
 
-static void
-NethashTrack(std::string context,const uint64_t oldvalue,const uint64_t newvalue)
-{
-  NS_LOG_UNCOND (Simulator::Now ().GetSeconds ()<<" "<<context<<" "<<newvalue);
-}
 
 TypeId
 DncpApplication::GetTypeId (void)
@@ -24,13 +22,20 @@ DncpApplication::GetTypeId (void)
 	.AddTraceSource ("NetworkHash",
 	                 "the network hash value calculated by this node",
 	                 MakeTraceSourceAccessor (&DncpApplication::net_hash))
+	.AddTraceSource("PktRx",
+					"Trace source indicating a packet was received",
+					MakeTraceSourceAccessor(&DncpApplication::m_packetRxTrace),
+					"ns3::DncpApplication::DncpCallback")
+	.AddTraceSource("PktTx",
+					"Trace source indicating a packet was sent",
+					MakeTraceSourceAccessor(&DncpApplication::m_packetTxTrace),
+					"ns3::DncpApplication::DncpCallback")
   ;
   return tid;
 }
 
 DncpApplication::DncpApplication ()
   : m_socket (0),
-    m_packetSize (10),
     m_nPackets (5),
     m_timeoutEvent (),
     m_running (false),
@@ -78,16 +83,11 @@ DncpApplication::StartApplication (void)
 		dncp_if_set_enabled(o, nom, 1);
 	}
 
-
 	if (inet_pton(AF_INET6, HNCP_MCAST_GROUP,
 	                &o->profile_data.multicast_address) < 1)
 	    {
 	      NS_LOG_ERROR("unable to inet_pton multicast group address");
 	    }
-
-	std::ostringstream oss;
-	oss<<"/Nodelist/"<<GetNode()->GetId()<<"/$ns3::DncpApplication/NetworkHash";
-	this->TraceConnect( "NetworkHash",oss.str(), MakeCallback (&NethashTrack));
 
 	m_running = true;
 	m_packetsSent = 0;
@@ -165,7 +165,7 @@ DncpApplication::Dncp_Sendto(dncp o,void *buf, size_t len, const struct sockaddr
 	if(m_running)
 	{
 		/*Get the destination address, port, and device*/
-		uint32_t interfaceIndex=dst->sin6_scope_id;
+		uint32_t deviceIndex=dst->sin6_scope_id;
 		char addrBuffer[INET6_ADDRSTRLEN];
 		inet_ntop(dst->sin6_family,&dst->sin6_addr,addrBuffer,sizeof(addrBuffer));
 
@@ -175,19 +175,29 @@ DncpApplication::Dncp_Sendto(dncp o,void *buf, size_t len, const struct sockaddr
 			uint16_t dstPort=dst->sin6_port;
 
 			Ptr<Ipv6> ipv6 = GetNode()->GetObject<Ipv6> ();
-			uint8_t *buf1;
-			buf1=static_cast<uint8_t *>(buf);
-			Ptr<Packet> packet = Create<Packet> (buf1,len);
+			uint32_t interfaceIndex=ipv6->GetInterfaceForDevice(GetNode()->GetDevice (deviceIndex));
+
+			Ptr<Packet> packet = Create<Packet> (static_cast<uint8_t *>(buf),len);
 
 			NodeIdTag nodeId;
 			nodeId.SetNodeId (GetNode()->GetId());
 			packet->AddByteTag (nodeId);
 
-			m_socket->SendTo (packet,0,Inet6SocketAddress(Ipv6Address::ConvertFrom(dstAddr), dstPort),
-				ipv6->GetNetDevice (interfaceIndex));
 
 			NS_LOG_INFO ("At time " <<Simulator::Now ().GetSeconds () << "s Node "<<GetNode()->GetId()<<" sent " << len << " bytes to "
-						<<Ipv6Address::ConvertFrom (dstAddr) << " port " <<dstPort<<" through interface "<<interfaceIndex);
+						<<Ipv6Address::ConvertFrom (dstAddr) << " port " <<dstPort<<" through interface "<<deviceIndex);
+
+			struct tlv_attr *msg =container_of(static_cast<char(*)[0]>(buf), tlv_attr, data);
+
+
+
+
+
+			m_packetTxTrace(ipv6->GetAddress(interfaceIndex,0).GetAddress(),Ipv6Address::ConvertFrom (dstAddr),deviceIndex,len,packet->GetUid(),msg,false);
+
+			m_socket->SendTo (packet,0,Inet6SocketAddress(Ipv6Address::ConvertFrom(dstAddr), dstPort),
+				GetNode()->GetDevice (deviceIndex));
+
 		}
 
 		else{
@@ -208,7 +218,6 @@ DncpApplication::Dncp_Recvfrom(void *buf, size_t len, char *ifname,
 
 	Ptr<Packet> packet;
 	Address from;
-
 
 	while ((packet = m_socket->RecvFrom (from)))
 	{
@@ -231,12 +240,10 @@ DncpApplication::Dncp_Recvfrom(void *buf, size_t len, char *ifname,
 
 			struct sockaddr_in6 peer;
 			Ipv6Address sourceAddr;
+			uint32_t pktSize=packet->GetSize ();
 
 			/*Get destination information,first incoming interface index*/
 			uint32_t incomingIf = interfaceInfo.GetRecvIf ();
-			Ptr<NetDevice> dev=GetNode()->GetDevice(incomingIf);
-			Ptr<Ipv6> ipv6 = GetNode()->GetObject<Ipv6>();
-			uint32_t ipInterfaceIndex = ipv6->GetInterfaceForDevice (dev);
 
 			/*Then source address, port*/
 			sourceAddr=Inet6SocketAddress::ConvertFrom (from).GetIpv6 ();
@@ -251,9 +258,8 @@ DncpApplication::Dncp_Recvfrom(void *buf, size_t len, char *ifname,
 				NS_LOG_ERROR("unable to inet_pton");
 			peer.sin6_family = AF_INET6;
 			peer.sin6_port = port;
-			peer.sin6_scope_id=ipInterfaceIndex;
+			peer.sin6_scope_id=incomingIf;
 
-			/*Get the destination address*/
 			char addrBuffer1[INET6_ADDRSTRLEN];
 			std::stringstream stream1;
 			stream1<<interfaceInfo.GetAddress();
@@ -261,16 +267,22 @@ DncpApplication::Dncp_Recvfrom(void *buf, size_t len, char *ifname,
 			if (inet_pton(AF_INET6, addrBuffer1,dst)<1)
 				NS_LOG_ERROR("unable to inet_pton");
 
-			packet->CopyData(static_cast<uint8_t*>(buf),packet->GetSize ());
-
+			packet->CopyData(static_cast<uint8_t*>(buf),pktSize);
 			memcpy(src,&peer,sizeof(struct sockaddr_in6));
-			std::sprintf(ifname,"%d",ipInterfaceIndex);
+			std::sprintf(ifname,"%d",incomingIf);
+
+
+			struct tlv_attr *msg =container_of(static_cast<char(*)[0]>(buf), tlv_attr, data);
 
 			NS_LOG_INFO("At time " << Simulator::Now ().GetSeconds () << "s Node "<<GetNode()->GetId()<<
 					" received " << packet->GetSize () << " bytes from node "<<sourceNodeId<<": "<<addrBuffer << " port " <<port<<
-					" from ipInterface "<<ipInterfaceIndex<<" from device interface "<<incomingIf);
+					" from device "<<incomingIf);
 
-			return packet->GetSize ();
+			m_packetRxTrace(sourceAddr,interfaceInfo.GetAddress(),incomingIf,pktSize,packet->GetUid(),msg,true);
+
+			//m_packetRxTrace1(packet,incomingIf,true);
+
+			return pktSize;
 
 	    }
 		else
@@ -282,6 +294,22 @@ DncpApplication::Dncp_Recvfrom(void *buf, size_t len, char *ifname,
 
 	return 0;
 }
+
+void
+DncpApplication::MsgReceivedCallback (dncp_subscriber s, const char *ifname, struct sockaddr_in6 *src,
+									  struct in6_addr *dst, struct tlv_attr *msg){
+	std::cout<<Simulator::Now ().GetSeconds ()<<" receive callback"<<std::endl;
+}
+
+void
+DncpApplication::PutTLV(){
+	char *data = "The answer";
+	dncp_tlv tlv = dncp_add_tlv(o, 42, data, 3000, 0);
+	if(!(tlv)) {
+		NS_LOG_ERROR("Could not publish TLV");
+		}
+}
+
 }/*End ns3 namespace*/
 
 
